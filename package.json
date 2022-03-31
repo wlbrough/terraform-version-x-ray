@@ -4,22 +4,52 @@
   "description": " View current version information for terraform providers and modules inline with your code.",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.66.0"
+    "vscode": "^1.60.0"
   },
   "categories": [
     "Other"
   ],
   "activationEvents": [
-    "onCommand:terraform-version-x-ray.helloWorld"
+    "*"
   ],
   "main": "./dist/extension.js",
+  "languages": [
+    {
+      "id": "hcl",
+      "extensions": [
+        ".hcl",
+        ".tf"
+      ],
+      "aliases": [
+        "HCL",
+        "hcl",
+        "tf",
+        "Terraform",
+        "terraform"
+      ]
+    }
+  ],
   "contributes": {
     "commands": [
       {
-        "command": "terraform-version-x-ray.helloWorld",
-        "title": "Hello World"
+        "command": "terraform-version-x-ray.enableCodeLens",
+        "title": "Enable Terraform Version X-Ray",
+        "category": "Terraform"
+      },
+      {
+        "command": "terraform-version-x-ray.disableCodeLens",
+        "title": "Disable Terraform Version X-Ray",
+        "category": "Terraform"
       }
-    ]
+    ],
+    "configuration": {
+      "properties": {
+        "terraform-version-x-ray.enableCodeLens": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
