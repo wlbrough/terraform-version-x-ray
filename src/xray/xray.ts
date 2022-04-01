@@ -1,26 +1,10 @@
-import { CodeLens, Range, TextDocument, Uri } from "vscode";
+import { CodeLens, Range, Uri } from "vscode";
 
 import {
-  PackageSourceTypes,
   Package,
+  PackageSourceTypes,
   PackageResponseErrors,
 } from "../package/Package";
-
-export function createXRaysFromPackages(
-  document: TextDocument,
-  packages: Package[]
-): XRay[] {
-  return packages.map((pkg) => {
-    const { sourceRange, versionRange } = pkg;
-
-    return new XRay(
-      sourceRange,
-      versionRange,
-      pkg,
-      Uri.file(document.fileName)
-    );
-  });
-}
 
 export class XRay extends CodeLens {
   replaceRange: Range;
