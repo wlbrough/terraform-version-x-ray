@@ -7,7 +7,7 @@ import {
   window,
   languages,
 } from "vscode";
-import { XRayProvider } from "./XRayProvider";
+import { XRayProvider } from "./xray/xrayProvider";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -44,7 +44,7 @@ export function activate(context: ExtensionContext) {
   );
 
   let action = commands.registerCommand(
-    "terraform-version-x-ray.codelensAction",
+    "terraform-version-x-ray.updateDependency",
     (args: any) => {
       window.showInformationMessage(`Action clicked with args=${args}`);
     }
