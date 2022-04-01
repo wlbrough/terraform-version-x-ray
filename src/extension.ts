@@ -1,69 +1,15 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
-import {
-  ExtensionContext,
-  WorkspaceEdit,
-  commands,
-  workspace,
-  languages,
-} from "vscode";
-import { XRay } from "./xray/xray";
-import { XRayProvider } from "./xray/xrayProvider";
+import { ExtensionContext } from "vscode";
+
+import { registerXRayCommands } from "./commands/xray";
+import { registerXRayProvider } from "./xray";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
-export function activate(context: ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log(
-    'Congratulations, your extension "terraform-version-x-ray" is now active!'
-  );
-
-  const xRayProvider = new XRayProvider();
-
-  let provider = languages.registerCodeLensProvider("*", xRayProvider);
-
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
-  let enable = commands.registerCommand(
-    "terraform-version-x-ray.enableCodeLens",
-    () => {
-      workspace
-        .getConfiguration("terraform-version-x-ray")
-        .update("enableCodeLens", true, true);
-    }
-  );
-
-  let disable = commands.registerCommand(
-    "terraform-version-x-ray.disableCodeLens",
-    () => {
-      workspace
-        .getConfiguration("terraform-version-x-ray.disableCodeLens")
-        .update("enableCodeLens", false, true);
-    }
-  );
-
-  let action = commands.registerCommand(
-    "terraform-version-x-ray.updateDependency",
-    (codeLens: XRay, packageVersion: string) => {
-      if ((<any>codeLens).__replaced) {
-        return Promise.resolve();
-      }
-
-      const edit = new WorkspaceEdit();
-      edit.replace(codeLens.documentUrl, codeLens.replaceRange, packageVersion);
-
-      return workspace
-        .applyEdit(edit)
-        .then(() => ((<any>codeLens).__replaced = true));
-    }
-  );
-
-  context.subscriptions.push(enable);
-  context.subscriptions.push(disable);
-  context.subscriptions.push(action);
-  context.subscriptions.push(provider);
+export async function activate(context: ExtensionContext) {
+  registerXRayProvider(context);
+  registerXRayCommands(context);
 }
 
 // this method is called when your extension is deactivated
