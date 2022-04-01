@@ -7,9 +7,29 @@ import {
   Position,
   workspace,
 } from "vscode";
+import * as semver from "semver";
+import got from "got";
 
 import { XRay, createXRaysFromPackages } from "./xray";
 import { Package } from "../package/Package";
+
+type TerraformRegistryResponse = {
+  id: string;
+  owner: string;
+  namespace: string;
+  name: string;
+  alias: string;
+  version: string;
+  tag: string;
+  description: string;
+  source: string;
+  published_at: string;
+  downloads: number;
+  tier: string;
+  logo_url: string;
+  versions: string[];
+  docs?: any[];
+};
 
 export class XRayProvider implements CodeLensProvider {
   private codeLenses: CodeLens[] = [];
@@ -42,28 +62,69 @@ export class XRayProvider implements CodeLensProvider {
     return [];
   }
 
-  public resolveCodeLens(codeLens: XRay): XRay | null {
+  public async resolveCodeLens(codeLens: XRay): Promise<XRay | null> {
     if (
       workspace
         .getConfiguration("terraform-version-x-ray")
         .get("enableCodeLens", true)
     ) {
-      return this.createSuggestedVersionCommand(codeLens);
+      return await this.createSuggestedVersionCommand(codeLens);
     }
     return null;
   }
 
-  private createSuggestedVersionCommand(codeLens: XRay) {
-    if (!codeLens.package.suggestion?.version) {
-      return null;
-    }
+  private async createSuggestedVersionCommand(codeLens: XRay) {
+    try {
+      if (
+        !codeLens.package.current?.source ||
+        !codeLens.package.current?.version
+      ) {
+        return null;
+      }
 
-    const { version } = codeLens.package.suggestion;
-    return codeLens.setCommand(
-      `\u2191 ${version}`,
-      "terraform-version-x-ray.updateDependency",
-      [codeLens, `${version}`]
-    );
+      if (!codeLens.package.suggestion) {
+        codeLens.package.suggestion = {
+          source: codeLens.package.current.source,
+          version: codeLens.package.current.version,
+        };
+      }
+
+      const suggestion = await this.getVersionSuggestion(
+        codeLens.package.current.source,
+        codeLens.package.current.version
+      );
+
+      // TODO: I think this requires multiple lenses on the same line
+      /* if (suggestion.currentVersion === suggestion.latest) {
+        return codeLens.setCommand(
+          "satisfies latest",
+          "terraform-version-x-ray.updateDependency",
+          [codeLens, null]
+        );
+      } else if (suggestion.satisfiesLatest) {
+        codeLens.setCommand(
+          "satisfies latest",
+          "terraform-version-x-ray.updateDependency",
+          [codeLens, null]
+        );
+      } else {
+        codeLens.setCommand(
+          `satisfies \u2191 ${suggestion.greatestSatisfied}`,
+          "terraform-version-x-ray.updateDependency",
+          [codeLens, `${suggestion.greatestSatisfied}`]
+        );
+      } */
+
+      return codeLens.setCommand(
+        `\u2191 ${suggestion.latest}`,
+        "terraform-version-x-ray.updateDependency",
+        [codeLens, `${suggestion.latest}`]
+      );
+    } catch (e) {
+      console.error("Create Command Error");
+      console.error(e);
+      return codeLens;
+    }
   }
 
   private parseProviders(document: TextDocument): Package[] {
@@ -114,7 +175,6 @@ export class XRayProvider implements CodeLensProvider {
             version,
           },
           suggestion: {
-            // TODO: fix this
             source,
             version,
           },
@@ -123,5 +183,38 @@ export class XRayProvider implements CodeLensProvider {
       }
     }
     return packages;
+  }
+
+  private async getVersionSuggestion(
+    source: string,
+    version: string
+  ): Promise<{
+    latest: string;
+    greatestSatisfied: string;
+    satisfiesLatest: boolean;
+    currentVersion: string | undefined;
+  }> {
+    // TODO: all of the error handling
+    const repositoryResponse: TerraformRegistryResponse = await got(
+      `https://registry.terraform.io/v1/providers/${source}`
+    ).json();
+
+    const currentVersion = semver.coerce(version)?.version;
+    let greatestSatisfied = currentVersion;
+    if (semver.satisfies(repositoryResponse.version, version)) {
+      greatestSatisfied = repositoryResponse.version;
+    } else {
+      const matchingVersions = repositoryResponse.versions.filter((v) =>
+        semver.satisfies(v, version)
+      );
+      greatestSatisfied =
+        matchingVersions.length > 0
+          ? matchingVersions[matchingVersions.length - 1]
+          : version;
+    }
+    const latest = repositoryResponse.version;
+    const satisfiesLatest = latest === greatestSatisfied;
+
+    return { latest, greatestSatisfied, satisfiesLatest, currentVersion };
   }
 }

@@ -2,11 +2,12 @@
 // Import the module and reference it with the alias vscode in your code below
 import {
   ExtensionContext,
+  WorkspaceEdit,
   commands,
   workspace,
-  window,
   languages,
 } from "vscode";
+import { XRay } from "./xray/xray";
 import { XRayProvider } from "./xray/xrayProvider";
 
 // this method is called when your extension is activated
@@ -45,8 +46,17 @@ export function activate(context: ExtensionContext) {
 
   let action = commands.registerCommand(
     "terraform-version-x-ray.updateDependency",
-    (args: any) => {
-      window.showInformationMessage(`Action clicked with args=${args}`);
+    (codeLens: XRay, packageVersion: string) => {
+      if ((<any>codeLens).__replaced) {
+        return Promise.resolve();
+      }
+
+      const edit = new WorkspaceEdit();
+      edit.replace(codeLens.documentUrl, codeLens.replaceRange, packageVersion);
+
+      return workspace
+        .applyEdit(edit)
+        .then(() => ((<any>codeLens).__replaced = true));
     }
   );
 
