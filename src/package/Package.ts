@@ -36,11 +36,11 @@ export type Package = {
   sourceRange: Range;
   versionRange: Range;
   order: number;
+  current: PackageSourceVersion;
 
   error?: PackageResponseErrors;
   errorMessage?: string;
   source?: PackageSourceTypes;
   type?: PackageVersionTypes;
-  current?: PackageSourceVersion;
   suggestion?: Suggestion;
 };

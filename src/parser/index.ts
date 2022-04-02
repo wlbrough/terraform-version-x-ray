@@ -1,4 +1,4 @@
-import { Position, TextDocument } from "vscode";
+import { Position, Range, TextDocument } from "vscode";
 
 import { Package } from "../package";
 
@@ -15,30 +15,9 @@ export function parseProviders(document: TextDocument): Package[] {
     }
 
     const [fullMatch, source, version] = matches;
+    const sourceRange = getRange(document, matches.index, fullMatch, source);
+    const versionRange = getRange(document, matches.index, fullMatch, version);
 
-    const sourceOffset = fullMatch.indexOf(source);
-    const versionOffset = fullMatch.indexOf(version);
-    const sourceLine = document.lineAt(
-      document.positionAt(matches.index + sourceOffset).line
-    );
-    const versionLine = document.lineAt(
-      document.positionAt(matches.index + versionOffset).line
-    );
-    const sourceLineIndex = sourceLine.text.indexOf(source);
-    const versionLineIndex = versionLine.text.indexOf(version);
-    const sourcePosition = new Position(sourceLine.lineNumber, sourceLineIndex);
-    const versionPosition = new Position(
-      versionLine.lineNumber,
-      versionLineIndex
-    );
-    const sourceRange = document.getWordRangeAtPosition(
-      sourcePosition,
-      new RegExp(source)
-    );
-    const versionRange = document.getWordRangeAtPosition(
-      versionPosition,
-      new RegExp(version)
-    );
     // TODO: sourcetype and versiontype
     if (sourceRange && versionRange) {
       let pkg: Package = {
@@ -54,4 +33,20 @@ export function parseProviders(document: TextDocument): Package[] {
     }
   }
   return packages;
+}
+
+function getRange(
+  document: TextDocument,
+  matchIndex: number,
+  regexMatch: string,
+  target: string
+): Range | undefined {
+  const targetOffset = regexMatch.indexOf(target);
+  const line = document.lineAt(
+    document.positionAt(matchIndex + targetOffset).line
+  );
+  const lineIndex = line.text.indexOf(target);
+  const position = new Position(line.lineNumber, lineIndex);
+
+  return document.getWordRangeAtPosition(position, new RegExp(target));
 }

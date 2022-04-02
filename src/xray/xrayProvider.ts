@@ -47,21 +47,19 @@ export class XRayProvider implements CodeLensProvider {
       .get("enableCodeLens", true);
   }
 
-  private async createSuggestedVersionCommand(codeLens: XRay) {
+  private async createSuggestedVersionCommand(
+    codeLens: XRay
+  ): Promise<XRay | null> {
     try {
-      if (
-        !codeLens.package.current?.source ||
-        !codeLens.package.current?.version
-      ) {
-        return null;
-      }
+      const { source, version } = codeLens.package.current;
 
       const suggestion = await getTerraformRegistryVersionSuggestion(
-        codeLens.package.current.source,
-        codeLens.package.current.version
+        source,
+        version
       );
 
       if ("errorType" in suggestion) {
+        // TODO: Handle any errors
         return null;
       }
 
