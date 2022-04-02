@@ -1,10 +1,6 @@
 import { CodeLens, Range, Uri } from "vscode";
 
-import {
-  Package,
-  PackageSourceTypes,
-  PackageResponseErrors,
-} from "../package/Package";
+import { Package, PackageSourceTypes, PackageResponseErrors } from "../package";
 
 export class XRay extends CodeLens {
   replaceRange: Range;

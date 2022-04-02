@@ -1,5 +1,7 @@
 import { Range } from "vscode";
 
+import { Suggestion } from "../suggestion";
+
 export enum PackageSourceTypes {
   directory = "directory",
   file = "file",
@@ -40,5 +42,5 @@ export type Package = {
   source?: PackageSourceTypes;
   type?: PackageVersionTypes;
   current?: PackageSourceVersion;
-  suggestion?: PackageSourceVersion;
+  suggestion?: Suggestion;
 };

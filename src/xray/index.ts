@@ -1,6 +1,6 @@
 import { languages, ExtensionContext, TextDocument, Uri } from "vscode";
 
-import { Package } from "../package/Package";
+import { Package } from "../package";
 import { XRay } from "./xray";
 import { XRayProvider } from "./xrayProvider";
 

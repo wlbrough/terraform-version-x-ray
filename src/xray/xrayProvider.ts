@@ -26,11 +26,7 @@ export class XRayProvider implements CodeLensProvider {
   public provideCodeLenses(
     document: TextDocument
   ): CodeLens[] | Thenable<CodeLens[]> {
-    if (
-      workspace
-        .getConfiguration("terraform-version-x-ray")
-        .get("enableCodeLens", true)
-    ) {
+    if (this.isEnabled()) {
       const packages = parseProviders(document);
       this.codeLenses = createXRaysFromPackages(document, packages);
       return this.codeLenses;
@@ -39,14 +35,16 @@ export class XRayProvider implements CodeLensProvider {
   }
 
   public async resolveCodeLens(codeLens: XRay): Promise<XRay | null> {
-    if (
-      workspace
-        .getConfiguration("terraform-version-x-ray")
-        .get("enableCodeLens", true)
-    ) {
+    if (this.isEnabled()) {
       return await this.createSuggestedVersionCommand(codeLens);
     }
     return null;
+  }
+
+  private isEnabled() {
+    return workspace
+      .getConfiguration("terraform-version-x-ray")
+      .get("enableCodeLens", true);
   }
 
   private async createSuggestedVersionCommand(codeLens: XRay) {
@@ -58,13 +56,6 @@ export class XRayProvider implements CodeLensProvider {
         return null;
       }
 
-      if (!codeLens.package.suggestion) {
-        codeLens.package.suggestion = {
-          source: codeLens.package.current.source,
-          version: codeLens.package.current.version,
-        };
-      }
-
       const suggestion = await getTerraformRegistryVersionSuggestion(
         codeLens.package.current.source,
         codeLens.package.current.version
@@ -73,6 +64,8 @@ export class XRayProvider implements CodeLensProvider {
       if ("errorType" in suggestion) {
         return null;
       }
+
+      codeLens.package.suggestion = suggestion;
 
       // TODO: I think this requires multiple lenses on the same line
       /* if (suggestion.currentVersion === suggestion.latest) {

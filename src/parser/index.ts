@@ -1,6 +1,6 @@
 import { Position, TextDocument } from "vscode";
 
-import { Package } from "../package/Package";
+import { Package } from "../package";
 
 const providersRegex =
   /source\s*=\s*"([A-Za-z0-9\/]+)"\s*\n?\s*version\s*=\s*"([A-Za-z0-9\.<>=~ ]+)"/g;
@@ -46,10 +46,6 @@ export function parseProviders(document: TextDocument): Package[] {
         versionRange,
         order: packages.length,
         current: {
-          source,
-          version,
-        },
-        suggestion: {
           source,
           version,
         },
