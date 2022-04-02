@@ -26,6 +26,7 @@ export async function registerXRayCommands(context: ExtensionContext) {
           return Promise.resolve();
         }
 
+        // TODO: fix replace logic to preserve/replace constraints properly
         const edit = new WorkspaceEdit();
         edit.replace(
           codeLens.documentUrl,

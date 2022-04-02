@@ -17,14 +17,21 @@ export function createXRaysFromPackages(
   document: TextDocument,
   packages: Package[]
 ): XRay[] {
-  return packages.map((pkg) => {
+  const xrays = [];
+
+  for (let pkg of packages) {
     const { sourceRange, versionRange } = pkg;
 
-    return new XRay(
-      sourceRange,
-      versionRange,
-      pkg,
-      Uri.file(document.fileName)
+    // NOTE: creating two XRay objects per package to handle all upgrade cases.
+    // One of these may be thrown away on CodeLens resolution if the package is
+    // current with latest.
+    xrays.push(
+      new XRay(sourceRange, versionRange, pkg, Uri.file(document.fileName), 0)
     );
-  });
+    xrays.push(
+      new XRay(sourceRange, versionRange, pkg, Uri.file(document.fileName), 1)
+    );
+  }
+
+  return xrays;
 }

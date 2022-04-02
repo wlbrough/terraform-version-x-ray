@@ -9,6 +9,7 @@ import {
 
 import { parseProviders } from "../parser";
 import { getTerraformRegistryVersionSuggestion } from "../registry";
+import { Suggestion } from "../suggestion";
 import { XRay, createXRaysFromPackages } from "../xray";
 
 export class XRayProvider implements CodeLensProvider {
@@ -53,44 +54,55 @@ export class XRayProvider implements CodeLensProvider {
     try {
       const { source, version } = codeLens.package.current;
 
-      const suggestion = await getTerraformRegistryVersionSuggestion(
-        source,
-        version
-      );
+      let suggestion: Suggestion;
 
-      if ("errorType" in suggestion) {
-        // TODO: Handle any errors
-        return null;
+      if (codeLens.package.suggestion) {
+        suggestion = codeLens.package.suggestion;
+      } else {
+        const maybeSuggestion = await getTerraformRegistryVersionSuggestion(
+          source,
+          version
+        );
+
+        if ("errorType" in maybeSuggestion) {
+          // TODO: Handle any errors
+          return null;
+        }
+
+        suggestion = maybeSuggestion;
+        codeLens.package.suggestion = maybeSuggestion;
       }
 
-      codeLens.package.suggestion = suggestion;
-
-      // TODO: I think this requires multiple lenses on the same line
-      /* if (suggestion.currentVersion === suggestion.latest) {
+      // TODO: Smarter suggestions based on the constraint type
+      if (codeLens.commandPosition === 0) {
+        if (suggestion.currentVersion === suggestion.latest) {
+          return codeLens.setCommand(
+            "satisfies latest",
+            "terraform-version-x-ray.updateDependency",
+            [codeLens, null]
+          );
+        } else if (suggestion.satisfiesLatest) {
+          return codeLens.setCommand(
+            "satisfies latest",
+            "terraform-version-x-ray.updateDependency",
+            [codeLens, null]
+          );
+        } else {
+          return codeLens.setCommand(
+            `satisfies \u2191 ${suggestion.greatestSatisfied}`,
+            "terraform-version-x-ray.updateDependency",
+            [codeLens, `${suggestion.greatestSatisfied}`]
+          );
+        }
+      } else if (suggestion.currentVersion !== suggestion.latest) {
         return codeLens.setCommand(
-          "satisfies latest",
+          `\u2191 ${suggestion.latest}`,
           "terraform-version-x-ray.updateDependency",
-          [codeLens, null]
+          [codeLens, `${suggestion.latest}`]
         );
-      } else if (suggestion.satisfiesLatest) {
-        codeLens.setCommand(
-          "satisfies latest",
-          "terraform-version-x-ray.updateDependency",
-          [codeLens, null]
-        );
-      } else {
-        codeLens.setCommand(
-          `satisfies \u2191 ${suggestion.greatestSatisfied}`,
-          "terraform-version-x-ray.updateDependency",
-          [codeLens, `${suggestion.greatestSatisfied}`]
-        );
-      } */
+      }
 
-      return codeLens.setCommand(
-        `\u2191 ${suggestion.latest}`,
-        "terraform-version-x-ray.updateDependency",
-        [codeLens, `${suggestion.latest}`]
-      );
+      return null;
     } catch (e) {
       console.error("Create Command Error");
       console.error(e);

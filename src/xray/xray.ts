@@ -7,17 +7,20 @@ export class XRay extends CodeLens {
   package: Package;
   documentUrl: Uri;
   command: any;
+  commandPosition: number;
 
   constructor(
     commandRange: Range,
     replaceRange: Range,
     packageResponse: Package,
-    documentUrl: Uri
+    documentUrl: Uri,
+    commandPosition: number
   ) {
     super(commandRange);
     this.replaceRange = replaceRange || commandRange;
     this.package = packageResponse;
     this.documentUrl = documentUrl;
+    this.commandPosition = commandPosition;
     this.command = null;
   }
 
