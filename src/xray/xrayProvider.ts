@@ -14,6 +14,7 @@ import { XRay, createXRaysFromPackages } from "../xray";
 
 export class XRayProvider implements CodeLensProvider {
   private codeLenses: CodeLens[] = [];
+  private enabled: boolean = true;
   private _onDidChangeCodeLenses: EventEmitter<void> = new EventEmitter<void>();
   public readonly onDidChangeCodeLenses: Event<void> =
     this._onDidChangeCodeLenses.event;
@@ -24,30 +25,36 @@ export class XRayProvider implements CodeLensProvider {
     });
   }
 
+  public enable(): void {
+    this.enabled = true;
+  }
+
+  public disable(): void {
+    this.enabled = false;
+  }
+
   public provideCodeLenses(
     document: TextDocument
   ): CodeLens[] | Thenable<CodeLens[]> {
-    if (this.isEnabled()) {
+    if (this.enabled) {
       const packages = parseProviders(document);
       this.codeLenses = createXRaysFromPackages(document, packages);
-      return this.codeLenses;
+    } else {
+      this.codeLenses = [];
     }
-    return [];
+
+    return this.codeLenses;
   }
 
   public async resolveCodeLens(codeLens: XRay): Promise<XRay | null> {
-    if (this.isEnabled()) {
+    if (this.enabled) {
       return await this.createSuggestedVersionCommand(codeLens);
     }
     return null;
   }
 
-  private isEnabled() {
-    return workspace
-      .getConfiguration("terraform-version-x-ray")
-      .get("enableCodeLens", true);
-  }
-
+  // TODO: Find a way to hide or remove the second CodeLens for a given
+  // line if the current version is equal to latest (no second suggestion required).
   private async createSuggestedVersionCommand(
     codeLens: XRay
   ): Promise<XRay | null> {
@@ -73,20 +80,12 @@ export class XRayProvider implements CodeLensProvider {
         codeLens.package.suggestion = maybeSuggestion;
       }
 
-      // TODO: Smarter suggestions based on the constraint type
       if (codeLens.commandPosition === 0) {
-        if (suggestion.currentVersion === suggestion.latest) {
-          return codeLens.setCommand(
-            "satisfies latest",
-            "terraform-version-x-ray.updateDependency",
-            [codeLens, null]
-          );
-        } else if (suggestion.satisfiesLatest) {
-          return codeLens.setCommand(
-            "satisfies latest",
-            "terraform-version-x-ray.updateDependency",
-            [codeLens, null]
-          );
+        if (
+          suggestion.currentVersion === suggestion.latest ||
+          suggestion.satisfiesLatest
+        ) {
+          return codeLens.setCommand("satisfies latest", "", []);
         } else {
           return codeLens.setCommand(
             `satisfies \u2191 ${suggestion.greatestSatisfied}`,
@@ -96,7 +95,7 @@ export class XRayProvider implements CodeLensProvider {
         }
       } else if (suggestion.currentVersion !== suggestion.latest) {
         return codeLens.setCommand(
-          `\u2191 ${suggestion.latest}`,
+          `latest \u2191 ${suggestion.latest}`,
           "terraform-version-x-ray.updateDependency",
           [codeLens, `${suggestion.latest}`]
         );
@@ -106,7 +105,7 @@ export class XRayProvider implements CodeLensProvider {
     } catch (e) {
       console.error("Create Command Error");
       console.error(e);
-      return codeLens;
+      return null;
     }
   }
 }

@@ -1,20 +1,19 @@
 import { commands, workspace, ExtensionContext, WorkspaceEdit } from "vscode";
 
-import { XRay } from "../xray/xray";
+import { XRay, XRayProvider } from "../xray";
 
-export async function registerXRayCommands(context: ExtensionContext) {
+export async function registerXRayCommands(
+  context: ExtensionContext,
+  provider: XRayProvider
+) {
   context.subscriptions.push(
     commands.registerCommand("terraform-version-x-ray.enableCodeLens", () => {
-      workspace
-        .getConfiguration("terraform-version-x-ray")
-        .update("enableCodeLens", true, true);
+      provider.enable();
     })
   );
   context.subscriptions.push(
     commands.registerCommand("terraform-version-x-ray.disableCodeLens", () => {
-      workspace
-        .getConfiguration("terraform-version-x-ray.disableCodeLens")
-        .update("enableCodeLens", false, true);
+      provider.disable();
     })
   );
 
@@ -26,7 +25,6 @@ export async function registerXRayCommands(context: ExtensionContext) {
           return Promise.resolve();
         }
 
-        // TODO: fix replace logic to preserve/replace constraints properly
         const edit = new WorkspaceEdit();
         edit.replace(
           codeLens.documentUrl,

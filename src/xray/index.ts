@@ -6,11 +6,14 @@ import { XRayProvider } from "./xrayProvider";
 
 export { XRay, XRayProvider };
 
-export async function registerXRayProvider(context: ExtensionContext) {
+export async function registerXRayProvider(
+  context: ExtensionContext
+): Promise<XRayProvider> {
   const xRayProvider = new XRayProvider();
   context.subscriptions.push(
     languages.registerCodeLensProvider("*", xRayProvider)
   );
+  return xRayProvider;
 }
 
 export function createXRaysFromPackages(

@@ -8,8 +8,8 @@ import { registerXRayProvider } from "./xray";
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: ExtensionContext) {
-  registerXRayProvider(context);
-  registerXRayCommands(context);
+  const provider = await registerXRayProvider(context);
+  registerXRayCommands(context, provider);
 }
 
 // this method is called when your extension is deactivated
